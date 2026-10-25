@@ -32,7 +32,7 @@ Build 'throttle' 90 { param($i) @{ cpu = 60; avail = 4000; commit = 60; pgIn = 1
   mhz = $(if ($i -ge 40 -and $i -le 55) { 2000 } else { 4300 }); gw = $(if ($i -ge 60 -and $i -le 66) { -1 } else { 1 }); net = $(if ($i -ge 60 -and $i -le 66) { -1 } else { 6 })
   temp = 70; clk = 1800; thr = $(if ($i -ge 30 -and $i -le 60) { 32 } else { 0 }) } } @() $true $true
 # steady: everything healthy; rows 0-29 idle (cpu 5 %, 800 MHz, GPU idle bit 1) must not count as throttling; under load the GPU sits at its
-# power limit (bit 4, as on the test PC at ordinary load): info only, no verdict, no mark cause. One mark at row 60.
+# power limit (bit 4, typical at ordinary load): info only, no verdict, no mark cause. One mark at row 60.
 Build 'steady' 90 { param($i) $idle = $i -lt 30; @{ cpu = $(if ($idle) { 5 } else { 60 }); avail = 4000; commit = 60; pgIn = 100; gpu = 60; game = 6500; mark = $(if ($i -eq 60) { 'MARK' } else { '' }); standby = 2500; free = 1500; pf = 20
   mhz = $(if ($idle) { 800 } else { 4300 }); gw = 1; net = 6; temp = 60; clk = 1800; thr = $(if ($idle) { 1 } else { 4 }) } } @() $true $true
 # Single-fault fixtures (each fires exactly one new rule). Healthy base: cpu 60 %, 4300 MHz, gw 1 ms, internet 6 ms, GPU 60 C, no throttle bits.
@@ -51,7 +51,7 @@ Build 'gpubits' 90 { param($i) Ok @{ thr = $(switch ($i) { 3 { 9 } 6 { 32 } 9 { 
 Build 'cpuclock' 120 { param($i) Ok @{ mhz = $(if ($i -in 40, 41, 42) { 2000 } else { 4300 }); thr = $(if ($i -eq 30) { 8 } else { 0 }) } } @() $true $true
 # frames.csv in PresentMon 2.x --date_time format (only the columns the summary reads). $f gives the frame time in ms for a frame
 # starting $t ms after 10:00:00 on swap chain 0x1; $slow adds a second chain 0x2 with one 1000 ms frame per second (must be ignored).
-# $shiftH moves the written clock by whole hours, like PresentMon 2.3.1 (its "local" time was 2 h ahead on the test PC).
+# $shiftH moves the written clock by whole hours, like PresentMon 2.3.1 (its "local" time can come out hours ahead).
 # $broken replaces the time of 0x1 frames 100 and 200 with 'NA' and blank (must be skipped).
 function Frames($case, $from, $to, $f, $slow, $shiftH = 0, $base = '10:00:00', $broken = $false) {
   $line = { param($sc, $t, $ms) 'r5apex_dx12.exe,1,{0},{1}000000,{2}' -f $sc, ([datetime]"2000-01-01 $base").AddHours($shiftH).AddMilliseconds($t).ToString('yyyy-M-d H:mm:ss.fff', [Globalization.CultureInfo]::InvariantCulture), $ms }

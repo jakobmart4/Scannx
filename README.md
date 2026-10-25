@@ -74,7 +74,7 @@ If nothing stands out and F9 marks show no frame hitch, the stutter is likely no
 ## Requirements and limits
 
 - Windows 10 or 11 with Windows PowerShell 5.1 (built in). Administrator rights for the Defender exclusion list and for frame times.
-- The stutter log uses English performance-counter names. Live logging was tested on one Windows 11 PC with Estonian display language (its counter names stay English). On a Windows with translated counter names (for example German or French) it may stop with "Cannot read performance counters".
+- The stutter log uses English performance-counter names. Live logging was tested on Windows 11 with English counter names. On a Windows with translated counter names (for example German or French) it may stop with "Cannot read performance counters".
 - GPU temperature, clock and throttle need an NVIDIA GPU. Other GPUs leave those columns empty.
 - Loading screens in the middle of a session count as play. When loading takes about half of a short session, nothing is trimmed (the cut compares with the median frame rate).
 
@@ -90,6 +90,7 @@ powershell -ExecutionPolicy Bypass -File .\disk-log.ps1 -Summarize "$env:USERPRO
 
 - Tests: `Invoke-Pester tests` (Pester 3.4, the one that ships with Windows). The stutter-log verdicts run on synthetic logs in `tests/fixtures` (made by `tests/make-fixtures.ps1`). The scan has a smoke test that runs it on the real machine (about 1 minute).
 - CI on every push to `main` and every pull request: parse all scripts, PSScriptAnalyzer (errors), Pester, on `windows-latest` with Windows PowerShell 5.1.
+- Plan, known limits and ideas: [docs/NEXT.md](docs/NEXT.md).
 - Release: push a tag `vX.Y.Z` with a matching `## vX.Y.Z` section in `CHANGELOG.md`. CI builds `Scannx-vX.Y.Z.zip` with `tools/build-release.ps1` (which checks the PresentMon SHA256) and publishes it.
 
 ## License

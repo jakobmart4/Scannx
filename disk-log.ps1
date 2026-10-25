@@ -130,7 +130,7 @@ function Write-Summary($run) {
       $any = $true; $L += ' - NETWORK: {0:N1} % of pings lost, gateway RTT {1}, internet RTT {2}: lag spikes come from the connection (Wi-Fi, router, background downloads), not the PC.' -f $lossPct, (& $Rt $okG), (& $Rt $okN) }
   }
   # nvidia throttle bits that count: 8 HW slowdown, 32 SW thermal, 64 HW thermal, 128 HW power brake. NOT 1 idle, 2 app clocks, 256 display clocks, and NOT 4 SW power cap:
-  # bit 4 is simply "GPU runs at its power limit" and is set all the time at ordinary load on the test PC (seen at 54 C and 82 % load), so it is only reported as info.
+  # bit 4 is simply "GPU runs at its power limit" and is set all the time at ordinary load, even when the GPU is cool and below full load, so it is only reported as info.
   $thMask = 8 + 32 + 64 + 128
   if ($cols -contains 'gpuThrottle') {
     $th = @(& $Got $use gpuThrottle); $BitPct = { param($bits) 100 * @($th | Where-Object { ([long]$_ -band $bits) -ne 0 }).Count / [math]::Max(1, $th.Count) }
