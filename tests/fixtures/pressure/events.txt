@@ -1,0 +1,2 @@
+﻿Logging for 60 min (synthetic fixture).
+10:00:10 SPIKE RAM  cpu 40%  queue 0  availMB 450

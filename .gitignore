@@ -1,0 +1,14 @@
+# reports and logs contain file paths and user names: never commit them
+scan-report*.txt
+*.partial
+disk-log/
+run-*/
+*.csv
+!tests/fixtures/**/*.csv
+*.reg
+*.zip
+# release build output and the PresentMon download (shipped in the release zip, not in git)
+dist/
+PresentMon-*.exe
+PresentMon-LICENSE.txt
+notes.md

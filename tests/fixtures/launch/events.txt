@@ -1,0 +1,2 @@
+﻿Logging for 60 min (synthetic fixture).
+10:00:02 SPIKE RAM+PAGING  cpu 50%

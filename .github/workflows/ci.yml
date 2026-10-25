@@ -1,0 +1,38 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell   # Windows PowerShell 5.1: the scripts and tests target it, not pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse every script
+        run: |
+          $bad = 0
+          Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object {
+            $errs = $null
+            [void][Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errs)
+            foreach ($e in $errs) { $bad++; "$($e.Extent.File):$($e.Extent.StartLineNumber) $($e.Message)" }
+          }
+          if ($bad) { exit 1 }
+
+      - name: PSScriptAnalyzer (errors only)
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $r = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          $r | Format-Table RuleName, ScriptName, Line, Message -AutoSize -Wrap
+          if ($r) { exit 1 }
+
+      - name: Pester 3.4 (the tests use the classic "Should Match" syntax)
+        run: |
+          Install-Module Pester -RequiredVersion 3.4.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester -RequiredVersion 3.4.0
+          $res = Invoke-Pester tests -PassThru
+          if ($res.FailedCount) { exit 1 }

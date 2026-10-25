@@ -1,0 +1,55 @@
+name: release
+# A tag v* runs the tests, builds Scannx-<tag>.zip with Intel PresentMon and publishes a GitHub release.
+# Run it by hand (workflow_dispatch) to build the zip as a workflow artifact only, without a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell   # Windows PowerShell 5.1, like the users
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # the publish step uses GH_TOKEN; no token left in .git/config
+
+      - name: Tests (Pester 3.4)
+        run: |
+          Install-Module Pester -RequiredVersion 3.4.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester -RequiredVersion 3.4.0
+          $res = Invoke-Pester tests -PassThru
+          if ($res.FailedCount) { exit 1 }
+
+      - name: Download PresentMon 2.3.1 (Intel, MIT license)
+        run: |
+          [Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+          Invoke-WebRequest https://github.com/GameTechDev/PresentMon/releases/download/v2.3.1/PresentMon-2.3.1-x64.exe -OutFile PresentMon-2.3.1-x64.exe -UseBasicParsing
+          Invoke-WebRequest https://raw.githubusercontent.com/GameTechDev/PresentMon/v2.3.1/LICENSE.txt -OutFile PresentMon-LICENSE.txt -UseBasicParsing
+
+      - name: Build the zip (checks the PresentMon SHA256)
+        run: |
+          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { "dev-$($env:GITHUB_SHA.Substring(0,7))" }
+          .\tools\build-release.ps1 -Version $v -PresentMon PresentMon-2.3.1-x64.exe -PresentMonLicense PresentMon-LICENSE.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scannx-zip
+          path: dist/
+
+      - name: Publish the GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # release notes = this version's section of CHANGELOG.md ("## v1.0.0 - <date>" up to the next "## ")
+          $m = [regex]::Match((Get-Content CHANGELOG.md -Raw), "(?ms)^## $([regex]::Escape($env:GITHUB_REF_NAME))(?=\s)[^\n]*\n(.*?)(?=^## |\z)")
+          if (-not $m.Success) { throw "CHANGELOG.md has no '## $($env:GITHUB_REF_NAME)' section" }
+          [IO.File]::WriteAllText("$PWD\notes.md", $m.Groups[1].Value.Trim())   # UTF-8 without BOM (Set-Content in PS 5.1 adds one)
+          gh release create $env:GITHUB_REF_NAME (Get-ChildItem dist -File).FullName --title "Scannx $($env:GITHUB_REF_NAME)" --notes-file notes.md
